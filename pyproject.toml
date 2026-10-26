@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "eadd"
+version = "1.0.0"
+description = "Enhanced Adversarial Drift Detection: unsupervised feature drift detection with a LightGBM classifier two-sample test, adaptive permutation testing and SHAP attribution"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "PolyForm-Noncommercial-1.0.0" }
+authors = [{ name = "Nusrat Begum", email = "rupunzelnusrat5@gmail.com" }]
+keywords = ["concept drift", "data drift", "mlops", "monitoring", "two-sample test", "lightgbm", "shap"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Intended Audience :: Science/Research",
+]
+dependencies = ["numpy>=1.23", "scikit-learn>=1.1", "lightgbm>=3.3"]
+
+[project.optional-dependencies]
+shap = ["shap>=0.42"]
+dev = ["pytest>=8", "shap>=0.42"]
+
+[project.urls]
+Paper = "https://ieeexplore.ieee.org/document/11596765"
+Demo = "https://eadd-demo.vercel.app"
+Experiments = "https://github.com/NusratBegum/unsupervised-concept-drift-detection"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/eadd"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

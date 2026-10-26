@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EADD Drift Detection Demo</title>
+<meta name="description" content="Enhanced Adversarial Drift Detection (EADD) on synthetic feature-drift streams: classifier two-sample test AUC over time, confirmed drifts and the features behind them.">
+<style>
+  :root {
+    --bg: #f7f8fa; --card: #ffffff; --ink: #15171c; --ink2: #4b525d; --muted: #6b7380; --line: #e4e7ec;
+    --grid: #eef0f3; --series: #2a78d6; --mark: #eb6834; --truth: #9aa3af; --accent: #2a78d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #101216; --card: #181b21; --ink: #eef0f3; --ink2: #c3c8d0; --muted: #959daa; --line: #2a2f38;
+            --grid: #232831; --series: #3987e5; --mark: #d95926; --truth: #6b7380; --accent: #5b8cf0; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 32px 16px 56px; }
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 1.7rem; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 1.05rem; margin: 0; }
+  .links a { color: var(--accent); margin-left: 14px; font-size: .95rem; }
+  .lede { color: var(--ink2); max-width: 75ch; margin: 8px 0 20px; }
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  @media (max-width: 760px) { .steps { grid-template-columns: 1fr 1fr; } }
+  .step { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; font-size: .9rem; color: var(--ink2); }
+  .step b { display: block; color: var(--ink); font-size: .95rem; margin-bottom: 2px; }
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: .88rem; color: var(--ink2); margin: 0 0 12px; }
+  .key { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 18px; height: 0; border-top: 2px solid var(--series); }
+  .sw.dash { border-top: 2px dashed var(--ink2); }
+  .sw.truth { width: 10px; height: 12px; border: 0; background: var(--truth); opacity: .35; border-radius: 2px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--mark); box-shadow: 0 0 0 2px var(--card); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .card.wide { grid-column: 1 / -1; }
+  .card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .verdict { font-size: .85rem; color: var(--ink2); }
+  .chart { position: relative; height: 190px; }
+  .detail { font-size: .85rem; color: var(--muted); margin: 8px 0 0; min-height: 1.3rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 500; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .notes { color: var(--muted); font-size: .88rem; margin-top: 20px; max-width: 80ch; }
+  .notes a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>EADD: drift detection demo</h1>
+    <nav class="links">
+      <a href="https://ieeexplore.ieee.org/document/11596765">Paper (IEEE)</a>
+      <a href="https://github.com/NusratBegum/eadd">Source</a>
+    </nav>
+  </header>
+  <p class="lede">Enhanced Adversarial Drift Detection watches a stream of unlabeled feature vectors and asks whether a classifier can tell recent data from a reference sample. These are real runs of the <code>eadd</code> package on five synthetic streams (6,000 samples, 5 features, drift in <code>f0</code> and <code>f1</code> from sample 3,000).</p>
+
+  <div class="steps">
+    <div class="step"><b>1 · Windows</b>Reservoir-sampled reference (500) vs sliding current window (200)</div>
+    <div class="step"><b>2 · Classifier test</b>LightGBM, 5-fold CV AUC every 50 samples</div>
+    <div class="step"><b>3 · Confirm</b>AUC &gt; 0.7 triggers an adaptive sequential permutation test (α = 0.05)</div>
+    <div class="step"><b>4 · Explain</b>TreeSHAP ranks the features behind the drift, then the reference resets</div>
+  </div>
+
+  <div class="legend" aria-hidden="true">
+    <span class="key"><span class="sw"></span>Classifier AUC</span>
+    <span class="key"><span class="sw dash"></span>Alarm threshold 0.7</span>
+    <span class="key"><span class="sw truth"></span>Drift present (ground truth)</span>
+    <span class="key"><span class="dot"></span>Confirmed drift</span>
+  </div>
+
+  <div class="grid" id="charts"></div>
+
+  <section class="card wide" style="margin-top:14px">
+    <div class="card-head"><h2>Summary</h2><span class="verdict">delay = samples from drift start to confirmation</span></div>
+    <table>
+      <thead><tr><th>Stream</th><th class="num">Drift starts</th><th class="num">Confirmed at</th><th class="num">Delay</th><th class="num">False alarms</th><th>Top features at detection</th></tr></thead>
+      <tbody id="summary"><tr><td colspan="6">Loading…</td></tr></tbody>
+    </table>
+  </section>
+
+  <p class="notes">Each chart shows one run with seed 42; numbers vary a little with the seed. On the recurring stream EADD confirms the first change. Its long-memory reservoir then mixes both concepts, so the later switches back and forth are not flagged in this run. The thesis benchmark on 13 real-world streams and seven baseline detectors lives in the <a href="https://github.com/NusratBegum/unsupervised-concept-drift-detection">experiments repository</a>.</p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const LABELS = { stable: 'Stable (no drift)', abrupt: 'Abrupt', gradual: 'Gradual', incremental: 'Incremental', recurring: 'Recurring' };
+
+  // Shade the samples where drift is present, and draw the 0.7 threshold.
+  const backdrop = {
+    id: 'backdrop',
+    beforeDatasetsDraw(chart, _, opts) {
+      const { ctx, chartArea: a, scales: { x, y } } = chart;
+      ctx.save();
+      ctx.fillStyle = css('--truth'); ctx.globalAlpha = 0.16;
+      for (const [s, e] of opts.bands) {
+        const x0 = Math.max(a.left, x.getPixelForValue(s)), x1 = Math.min(a.right, x.getPixelForValue(e));
+        if (x1 > x0) ctx.fillRect(x0, a.top, x1 - x0, a.bottom - a.top);
+      }
+      ctx.globalAlpha = 1; ctx.strokeStyle = css('--ink2'); ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+      const ty = y.getPixelForValue(opts.threshold);
+      ctx.beginPath(); ctx.moveTo(a.left, ty); ctx.lineTo(a.right, ty); ctx.stroke();
+      ctx.restore();
+    },
+  };
+
+  function bands(r, settings) {
+    const { drift_at: d, width: w, n_samples: n } = settings;
+    if (r.pattern === 'stable') return [];
+    if (r.pattern === 'recurring') { const out = []; for (let s = d; s < n; s += 2 * w) out.push([s, Math.min(s + w, n)]); return out; }
+    return [[d, n]];
+  }
+
+  function verdict(r, settings) {
+    if (r.pattern === 'stable') return r.detections.length ? `${r.detections.length} false alarm(s)` : 'no alarms';
+    const real = r.detections.filter((d) => d.t >= settings.drift_at);
+    return real.length ? `confirmed after ${real[0].t - settings.drift_at} samples` : 'not detected';
+  }
+
+  fetch('data.json').then((r) => r.json()).then(({ settings, auc_threshold, results }) => {
+    const host = document.getElementById('charts');
+    const tick = css('--muted'), grid = css('--grid');
+    results.forEach((r, i) => {
+      const card = document.createElement('section');
+      card.className = 'card' + (i === 0 ? ' wide' : '');
+      card.innerHTML = `<div class="card-head"><h2>${LABELS[r.pattern]}</h2><span class="verdict">${verdict(r, settings)}</span></div>
+        <div class="chart"><canvas role="img" aria-label="${LABELS[r.pattern]} stream: classifier AUC over time. ${verdict(r, settings)}."></canvas></div>
+        <p class="detail"></p>`;
+      host.append(card);
+      const detail = card.querySelector('.detail');
+      const detMap = new Map(r.detections.map((d) => [d.t, d]));
+      new Chart(card.querySelector('canvas'), {
+        type: 'line',
+        data: { datasets: [
+          { data: r.checks.map(([t, a]) => ({ x: t, y: a })), borderColor: css('--series'), borderWidth: 2, pointRadius: 0, pointHitRadius: 6, tension: 0 },
+          { type: 'scatter', data: r.detections.map((d) => ({ x: d.t, y: d.auc })), backgroundColor: css('--mark'), borderColor: css('--card'), borderWidth: 2, pointRadius: 6, pointHoverRadius: 8 },
+        ] },
+        options: {
+          animation: false, maintainAspectRatio: false, parsing: true,
+          interaction: { mode: 'nearest', axis: 'x', intersect: false },
+          plugins: {
+            legend: { display: false },
+            backdrop: { bands: bands(r, settings), threshold: auc_threshold },
+            tooltip: { callbacks: {
+              title: (items) => `Sample ${items[0].parsed.x.toLocaleString()}`,
+              label: (item) => item.datasetIndex === 1 ? `Confirmed drift · AUC ${item.parsed.y}` : `AUC ${item.parsed.y}`,
+            } },
+          },
+          onHover: (_, els) => {
+            const el = els.find((e) => e.datasetIndex === 1);
+            const d = el && detMap.get(r.detections[el.index].t);
+            if (d) detail.textContent = `Drift at ${d.t.toLocaleString()}: p = ${d.p_value} after ${d.permutations} permutations · top features ${Object.entries(d.top_features).map(([k, v]) => `${k} ${v}%`).join(', ')}`;
+          },
+          scales: {
+            x: { type: 'linear', min: 0, max: settings.n_samples, ticks: { color: tick, maxTicksLimit: 7, callback: (v) => v.toLocaleString() }, grid: { display: false }, border: { color: grid } },
+            y: { min: 0, max: 1, ticks: { color: tick, stepSize: 0.25 }, grid: { color: grid }, border: { display: false } },
+          },
+        },
+        plugins: [backdrop],
+      });
+      if (r.detections.length) {
+        const d = r.detections[0];
+        detail.textContent = `First detection at ${d.t.toLocaleString()}: p = ${d.p_value} after ${d.permutations} permutations · top features ${Object.entries(d.top_features).map(([k, v]) => `${k} ${v}%`).join(', ')}`;
+      }
+    });
+
+    document.getElementById('summary').innerHTML = results.map((r) => {
+      const real = r.detections.filter((d) => d.t >= settings.drift_at);
+      const fa = r.detections.filter((d) => d.t < settings.drift_at || r.pattern === 'stable').length;
+      const first = r.pattern === 'stable' ? null : real[0];
+      const top = first ? Object.keys(first.top_features).slice(0, 2).join(', ') : '–';
+      return `<tr><td>${LABELS[r.pattern]}</td><td class="num">${r.pattern === 'stable' ? '–' : settings.drift_at.toLocaleString()}</td>
+        <td class="num">${first ? first.t.toLocaleString() : '–'}</td><td class="num">${first ? first.t - settings.drift_at : '–'}</td>
+        <td class="num">${fa}</td><td>${top}</td></tr>`;
+    }).join('');
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use EADD, please cite the paper."
+title: "EADD: Enhanced Adversarial Drift Detection"
+authors:
+  - family-names: Begum
+    given-names: Nusrat
+repository-code: "https://github.com/NusratBegum/eadd"
+license: LicenseRef-PolyForm-Noncommercial-1.0.0
+preferred-citation:
+  type: conference-paper
+  title: "Enhanced Adversarial Drift Detection for MLOps Feature Monitoring"
+  authors:
+    - family-names: Begum
+      given-names: Nusrat
+    - family-names: Yamchote
+      given-names: P.
+    - family-names: Amornbunchornvej
+      given-names: C.
+    - family-names: Noraset
+      given-names: T.
+  collection-title: "2026 Joint International Conference on Computer Science and Software Engineering (JCSSE)"
+  publisher:
+    name: IEEE
+  year: 2026
+  url: "https://ieeexplore.ieee.org/document/11596765"
