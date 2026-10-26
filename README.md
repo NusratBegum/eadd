@@ -76,9 +76,9 @@ demo/                  # static Chart.js demo deployed on Vercel
 
 ```bibtex
 @inproceedings{begum2026eadd,
-  author    = {Begum, Nusrat and Yamchote, P. and Amornbunchornvej, C. and Noraset, T.},
+  author    = {Begum, Nusrat and Yamchote, Phaphontee and Amornbunchornvej, Chainarong and Noraset, Thanapon},
   title     = {Enhanced Adversarial Drift Detection for MLOps Feature Monitoring},
-  booktitle = {2026 Joint International Conference on Computer Science and Software Engineering (JCSSE)},
+  booktitle = {Proc. 23rd International Joint Conference on Computer Science and Software Engineering (JCSSE)},
   publisher = {IEEE},
   year      = {2026},
   url       = {https://ieeexplore.ieee.org/document/11596765}

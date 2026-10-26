@@ -5,10 +5,8 @@ PolyForm Noncommercial License 1.0.0
 
 Copyright (c) 2026 Nusrat Begum
 
-This license covers ONLY the contributions made by Nusrat Begum to this
-repository. The remainder of the repository (forked from upstream) is
-covered by the BSD 3-Clause License in the file `LICENSE`. See the
-section "Scope of this License" below for the exact file list.
+This license covers all files in this repository, which are original work
+by Nusrat Begum.
 
 ================================================================================
 TERMS
@@ -114,32 +112,8 @@ of and compliance with these terms.
 
     The "licensor" is Nusrat Begum.
     The "software" is the software the licensor makes available under
-    these terms (the files listed in the "Scope" section below).
+    these terms (the files in this repository).
     "You" refers to the individual or entity agreeing to these terms.
-
-================================================================================
-SCOPE OF THIS LICENSE
-================================================================================
-
-This license applies ONLY to the following files in this repository,
-which are original contributions by Nusrat Begum:
-
-    detectors/eadd.py
-    experiment1_temporal_patterns.py
-    experiment2_realworld_benchmark.py
-    experiment3_explainability.py
-    experiment4_false_alarms.py
-    experiment5_multidetector_synthetic.py
-    experiment6_multidetector_realworld.py
-    experiment7_explainability_deep_dive.py
-    experiment_camera_ready.py
-    demo.py
-    demo_eadd.py
-    EADD_Thesis_Experiments.ipynb
-
-All other files in this repository are derived from the upstream project
-(originally by Lukats et al. / DFKI) and remain under the BSD 3-Clause
-License contained in the file `LICENSE` in this directory.
 
 ================================================================================
 ATTRIBUTION (when using these files in research)
@@ -157,4 +131,4 @@ ATTRIBUTION (when using these files in research)
 }
 
 For licensing inquiries beyond PolyForm Noncommercial 1.0.0 (including
-commercial licensing), contact: nusrat.beg@student.mahidol.ac.th
+commercial licensing), contact: rupunzelnusrat5@gmail.com
